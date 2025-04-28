@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evidence Verifier</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;            
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        /* Layout styles */
+        .app-container {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .left-panel {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .right-panel {
+            flex: 1;
+            min-width: 0;
+            position: sticky;
+            top: 20px;
+            align-self: flex-start;
+        }
+        
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            height: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        h2 {
+            color: #444;
+            margin-top: 0;
+        }
+        
+        .input-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .input-section h2 {
+            font-size: 1.2em;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        textarea {
+            width: 97%;
+            height: 200px;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            resize: vertical;
+        }
+        .small-textarea {
+            height: 100px;
+        }
+        .file-input-container {
+            margin: 10px 0;
+        }
+        .file-input-container input[type="file"] {
+            display: none;
+        }
+        .file-input-button {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        .file-input-button:hover {
+            background-color: #5a6268;
+        }
+        .file-name {
+            margin-left: 10px;
+            color: #666;
+            display: none;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .verify-button {
+            background-color: #6c757d;
+        }
+        .verify-button:hover {
+            background-color: #5a6268;
+        }
+        #result {
+            background-color: #f8f9fa;
+            width: 100%;
+            height: 100%;
+            min-height: 300px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            overflow: auto;
+            display: none;
+        }
+        .section-title {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+        }
+        .results-section {
+            margin-bottom: 20px;
+        }
+        .error {
+            color: #dc3545;
+            margin-top: 10px;
+            display: none;
+        }
+        .verification-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+            margin-bottom: 10px;
+        }
+        .verification-status.valid {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .verification-status.invalid {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .verification-status.unknown {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+            }
+            
+            .right-panel {
+                position: static;
+            }
+        }
+        .info-text {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        .clear-button {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .clear-button:hover {
+            background-color: #c82333;
+        }
+    </style>
+    <!-- Add Forge.js library for crypto operations -->
+    <script src="https://cdn.jsdelivr.net/npm/node-forge@1.3.1/dist/forge.min.js"></script>
+    <!-- Add OpenPGP.js library for PGP key support -->
+    <script src="https://cdn.jsdelivr.net/npm/openpgp@5.10.2/dist/openpgp.min.js"></script>
+</head>
+<body>
+    <h1>DSSE Evidence Online Verifier</h1>
+    
+    <div class="app-container">
+        <div class="left-panel">
+            <div class="container">
+                <div class="input-section">
+                    <h2>DSSE Envelope Input</h2>
+                    
+                    <div>
+                        <label for="dsseInput">Paste DSSE Envelope JSON:</label>
+                        <textarea id="dsseInput" placeholder="Paste your DSSE envelope JSON here..."></textarea>
+                        <button id="clearJsonButton" class="clear-button" onclick="clearJsonInput()">Clear</button>
+                    </div>
+                    
+                    <div class="file-input-container" style="margin-top: 15px;">
+                        <label class="file-input-button" for="fileInput">Upload from JSON file</label>
+                        <input type="file" id="fileInput" accept=".json,.txt">
+                        <span class="file-name" id="fileName"></span>
+                    </div>
+                    <p class="info-text">Upload a JSON file containing a DSSE envelope</p>
+                </div>
+
+                <div class="input-section">
+                    <h2>Signature Verification (Optional)</h2>
+                    
+                    <div>
+                        <label for="pubKeyInput">Paste Public Key:</label>
+                        <textarea id="pubKeyInput" class="small-textarea" placeholder="Paste your public key here (PEM format)..."></textarea>
+                        <button id="clearPubKeyButton" class="clear-button" onclick="clearPubKeyInput()">Clear</button>
+                        <p class="info-text">Paste a public key in PEM format (starting with -----BEGIN PUBLIC KEY-----)</p>
+                    </div>
+
+                    <div class="file-input-container" style="margin-top: 15px;">
+                        <label class="file-input-button" for="certInput">Upload Public Key from File</label>
+                        <input type="file" id="certInput" accept=".pem,.crt,.cer">
+                        <span class="file-name" id="certFileName"></span>                        
+                    </div>
+                    <p class="info-text">Upload a public certificate in PEM format (.pem, .crt, .cer)</p>
+                </div>
+
+                <div class="button-group">
+                    <button onclick="processDSSE()">Extract & Verify</button>
+                </div>
+
+                <p class="info-text">Notice: support is currently offered for PGP and RSA keys only</p>
+                
+            </div>
+        </div>
+        
+        <div class="right-panel">
+            <div class="container">
+                <h2>Results</h2>                
+                
+                <div class="results-section">
+                    <div class="section-title">Verification Result</div>
+                    <div id="verificationStatus" class="verification-status"></div>
+                </div>
+                
+                <div class="results-section">
+                    <div class="section-title">Decoded Payload</div>
+                    <div id="error" class="error"></div>
+                    <div id="result"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="./dsse.js"></script>
+    
+    <script>
+        // Function to handle file selection for DSSE input
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                document.getElementById('fileName').textContent = this.files[0].name;
+                document.getElementById('fileName').style.display = 'inline';
+            }
+        });
+        
+        // Function to handle file selection for certificate
+        document.getElementById('certInput').addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                document.getElementById('certFileName').textContent = this.files[0].name;
+                document.getElementById('certFileName').style.display = 'inline';
+            }
+        });
+        
+        // Function to clear file input
+        window.clearFileInput = function() {
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileName').textContent = '';
+            document.getElementById('fileName').style.display = 'none';
+        };
+        
+        // Function to clear certificate input
+        window.clearCertInput = function() {
+            document.getElementById('certInput').value = '';
+            document.getElementById('certFileName').textContent = '';
+            document.getElementById('certFileName').style.display = 'none';
+        };
+        
+        // Function to clear JSON input
+        window.clearJsonInput = function() {
+            document.getElementById('dsseInput').value = '';
+        };
+        
+        // Function to clear public key input
+        window.clearPubKeyInput = function() {
+            document.getElementById('pubKeyInput').value = '';
+        };
+    </script>
+</body>
+</html> 
