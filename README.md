@@ -71,6 +71,7 @@ X2mNxPWgSPLCYG7nC/XkCXSJ2lBkpKFYxNy1riXyoDZTKMA+8765j+UpWZqEGLNs
 ```
 ## Dependencys
 OpenPGP.js  https://www.npmjs.com/package/openpgp (licensed under https://www.gnu.org/licenses/lgpl-3.0.en.html)
+
 Node-Forge (forge.js) https://www.npmjs.com/package/node-forge (license under BSD License/GNU General Public License (GPL) Version 2 )
 
 
