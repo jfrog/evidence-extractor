@@ -148,113 +148,128 @@ async function verifyDSSESignature(dsseEnvelope, publicKeyInfo) {
             throw new Error('No signatures found in the DSSE envelope');
         }
         
-        // Get the signature algorithm
-        const sigAlg = dsseEnvelope.signatures[0].keyid || '';
-        console.log('Signature algorithm/key ID:', sigAlg);
-        
-        // Convert base64 signature to binary
-        const signatureBase64 = dsseEnvelope.signatures[0].sig;
-        //console.log('signatureBase64', signatureBase64);
-        const signatureBinary = forge.util.decode64(signatureBase64);
-        console.log('signatureBinary', signatureBinary);
-        
         // Get the encoded payload and payloadType
         const payload = dsseEnvelope.payload;
         const payloadDecoded = forge.util.decode64(payload);
         const payloadType = dsseEnvelope.payloadType;
         
         // Properly implement the DSSE PAE (Pre-Authentication Encoding) format
-        // Format: "DSSEv1 " + len(payloadType) + " " + payloadType + " " + len(payload) + " " + payload
         const paePrefix = `DSSEv1 ${payloadType.length} ${payloadType} ${payloadDecoded.length} `;
         const pae = paePrefix + payloadDecoded;
-        console.log('pae=', pae);
-        const encodedPae = forge.util.encode64(pae);
-        
+        //console.log('pae=', pae);
+                
         // Handle different key formats
         const publicKey = publicKeyInfo.key;
         console.log('publicKeyInfo.format=', publicKeyInfo.format);
         // Special handling for PGP keys
         if (publicKeyInfo.format === 'pgpPublicKey') {
-            console.log('Verifying with PGP public key using OpenPGP.js');
-            
-            try {
+            console.log('Verifying with PGP public key using OpenPGP.js');            
+            try {                
                 // Create a message from the PAE data for verification
                 const message = await openpgp.createMessage({ text: pae });
-                console.log('message=', message);
-
-                // Convert signature to the right format for OpenPGP.js
-                // OpenPGP.js expects an armored signature
-                const armoredSignature = signatureBinary;
+                //console.log('message=', message);
                 
-                // Create a detached signature object
-                const detachedSignature = await openpgp.readSignature({
-                    armoredSignature: armoredSignature
-                });
-                
-                // Verify the signature using OpenPGP.js
-                const verificationResult = await openpgp.verify({
-                    message: message,
-                    signature: detachedSignature,
-                    verificationKeys: publicKey
-                });
-                
-                // Check if the signature is valid
-                const { verified, keyID } = verificationResult.signatures[0];
-                try {
-                    await verified; // This will throw if the signature is invalid
-                    console.log('PGP signature verification succeeded');
-                    return true;
-                } catch (error) {
-                    console.error('PGP signature verification failed:', error);
-                    return false;
-                }
+                // loop over all signatures and verify each one
+                let counter = 0;
+                for (const signature of dsseEnvelope.signatures) {
+                    counter++;   
+                    try{
+                        console.log('trying to verify signature number=', counter);
+                        // Convert signature to the right format for OpenPGP.js
+                        // OpenPGP.js expects an armored signature
+                        const signatureBinary = forge.util.decode64(signature.sig);
+                        // console.log('signatureBinary=', signatureBinary);                                  
+                        // Create a detached signature object
+                        const detachedSignature = await openpgp.readSignature({
+                            armoredSignature: signatureBinary
+                        });
+                        // Verify the signature using OpenPGP.js
+                        const verificationResult = await openpgp.verify({
+                            message: message,
+                            signature: detachedSignature,
+                            verificationKeys: publicKey
+                        });
+                        // Check if the signature is valid
+                        const { verified, keyID } = verificationResult.signatures[0];
+                        try {
+                            await verified; // This will throw if the signature is invalid
+                            console.log('PGP signature verification succeeded');
+                            return true;
+                        } catch (error) {
+                            console.error('PGP signature verification failed:', error);
+                            //return false; now we continue with the next signature
+                        }
+                    } catch (error) {
+                        console.error('Error during PGP verification of signature:',  error, 'signature number=', counter);
+                        console.info('Continue to next signature');
+                    }
+                }                           
             } catch (error) {
                 console.error('Error during PGP verification:', error);
                 throw new Error('PGP signature verification failed: ' + error.message);
             }
-        }
-        
-        // Create message digest based on signature algorithm (default to SHA-256)
-        let md = forge.md.sha256.create();
-        
-        // Check if we can detect the algorithm from keyid
-        if (sigAlg.toLowerCase().includes('sha1')) {
-            md = forge.md.sha1.create();
-        } else if (sigAlg.toLowerCase().includes('sha384')) {
-            md = forge.md.sha384.create();
-        } else if (sigAlg.toLowerCase().includes('sha512')) {
-            md = forge.md.sha512.create();
-        }
-        
-        // Update message digest with the properly encoded PAE data
-        md.update(pae);
-        
-        // Use the appropriate verification method based on the key
-        try {
-            const isValid = publicKey.verify(md.digest().bytes(), signatureBinary);
-            console.log('Signature verification result:', isValid);
-            return isValid;
-        } catch (verifyError) {
-            console.error('Verification failed with error:', verifyError);
+        }else {
+            console.log('Verifying with Forge.js');
+            // try to verify using forge.js
             
-            // Try an alternative approach if the first one fails
-            try {
-                console.log('Attempting alternative verification approach...');
-                // Create a verifier
-                const verifier = forge.pki.createVerifier(md.algorithm);
-                verifier.update(pae);
-                const isValid = verifier.verify(publicKey, signatureBinary);
-                console.log('Alternative verification result:', isValid);
-                return isValid;
-            } catch (altError) {
-                console.error('Alternative verification failed:', altError);
-                throw new Error('Signature verification failed with both approaches');
+            // loop over all signature and try to verify any of them
+            let counter=0
+            for (const signature of dsseEnvelope.signatures) {
+                counter++;   
+                // Get the signature algorithm                
+                const sigAlg = signature.keyid || '';
+                console.log('Checking signature, signature algorithm/key ID:', sigAlg, 'signature number=', counter);
+                // Create message digest based on signature algorithm (default to SHA-256)
+                let md = forge.md.sha256.create();
+                // Check if we can detect the algorithm from keyid
+                if (sigAlg.toLowerCase().includes('sha1')) {
+                    md = forge.md.sha1.create();
+                } else if (sigAlg.toLowerCase().includes('sha384')) {
+                    md = forge.md.sha384.create();
+                } else if (sigAlg.toLowerCase().includes('sha512')) {
+                    md = forge.md.sha512.create();
+                }
+                // Update message digest with the properly encoded PAE data
+                md.update(pae);
+                
+                    // Convert base64 signature to binary
+                const signatureBase64 = signature.sig;
+                //console.log('signatureBase64', signatureBase64);
+                const signatureBinary = forge.util.decode64(signatureBase64);
+                //console.log('signatureBinary', signatureBinary);
+                
+                // Use the appropriate verification method based on the key
+                try {
+                    const isValid = publicKey.verify(md.digest().bytes(), signatureBinary);
+                    console.log('Signature verification result:', isValid);
+                    return isValid;
+                } catch (verifyError) {
+                    console.error('Verification failed with error:', verifyError, 'signature number=', counter);
+                    
+                    // Try an alternative approach if the first one fails
+                    try {
+                        console.log('Attempting alternative verification approach...');
+                        // Create a verifier
+                        const verifier = forge.pki.createVerifier(md.algorithm);
+                        verifier.update(pae);
+                        const isValid = verifier.verify(publicKey, signatureBinary);
+                        console.log('Alternative verification result:', isValid);
+                        return isValid;
+                    } catch (altError) {
+                        console.error('Alternative verification failed:', altError, 'signature number=', counter);
+                        console.info('Continue to next signature');
+                        //throw new Error('Signature verification failed with both approaches');
+                        // Now we continue to the next signature
+                    }
+                }
+           
             }
-        }
+        }        
     } catch (error) {
         console.error('Verification error:', error);
         throw new Error(`Signature verification failed: ${error.message}`);
     }
+    return false;
 }
 
 async function verifySignature(dsseEnvelope, verificationKey) {
@@ -292,7 +307,7 @@ async function verifySignature(dsseEnvelope, verificationKey) {
             return false;
         }
         
-        console.log('keyText', keyText);
+        //console.log('keyText', keyText);
         
         // Extract the public key from PEM format
         const publicKeyInfo = await extractPublicKeyFromPEM(keyText);
