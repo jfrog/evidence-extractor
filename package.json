@@ -1,5 +1,5 @@
 {
   "dependencies": {
-    "openpgp": "^6.1.0"
+    "openpgp": "^6.1.1"
   }
 }
