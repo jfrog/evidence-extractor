@@ -74,6 +74,9 @@ OpenPGP.js  https://www.npmjs.com/package/openpgp (licensed under https://www.gn
 
 Node-Forge (forge.js) https://www.npmjs.com/package/node-forge (license under BSD License/GNU General Public License (GPL) Version 2 )
 
+@peculiar/x509 https://www.npmjs.com/package/@peculiar/x509 (license under https://github.com/PeculiarVentures/x509/blob/master/LICENSE)
+
+starkbank-ecdsa https://www.npmjs.com/package/starkbank-ecdsa (license under https://github.com/starkbank/ecdsa-node/blob/master/LICENSE)
 
 ## Note
 

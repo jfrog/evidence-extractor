@@ -212,26 +212,40 @@
         /* Tab styles */
         .tab-container {
             display: flex;
-            gap: 10px;
+            border-bottom: 1px solid #ddd;
             margin-bottom: 20px;
+            padding: 0;
         }
 
         .tab-button {
-            background-color: #6c757d;
-            color: white;
+            background-color: transparent;
+            color: #6c757d;
             border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
+            padding: 12px 24px;
             cursor: pointer;
             font-size: 16px;
+            position: relative;
+            margin-right: 4px;
+            border-radius: 4px 4px 0 0;
+            transition: all 0.2s ease;
+        }
+
+        .tab-button:hover {
+            background-color: #f8f9fa;
+            color: #495057;
         }
 
         .tab-button.active {
-            background-color: #007bff;
+            background-color: white;
+            color: #007bff;
+            border: 1px solid #ddd;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
         }
 
         .tab-content {
             display: none;
+            padding: 20px 0;
         }
 
         .tab-content.active {
@@ -247,10 +261,14 @@
     <div class="app-container">
         <div class="left-panel">
             <div class="container">
+                <div class="tab-container">
+                    <button class="tab-button active" onclick="switchTab('dsse')">DSSE Envelope Input</button>
+                    <button class="tab-button" onclick="switchTab('sigstore')">Sigstore Bundle Input</button>
+                </div>
                 <div class="input-section">
                                       
                     <div id="dsse-tab" class="tab-content active">
-                        <h2>DSSE Envelope Input</h2>
+                        <h2>DSSE Envelope Input</h2>                    
                         
                         <div>
                             <label for="dsseInput">Paste DSSE Envelope JSON:</label>
@@ -283,12 +301,30 @@
                             </div>
                         </div>
                     </div>
+                    <div id="sigstore-tab" class="tab-content">
+                        <h2>Sigstore Bundle Input</h2>
+                        
+                        <div>
+                            <label for="sigstoreInput">Paste Sigstore Bundle JSON:</label>
+                            <textarea id="sigstoreInput" placeholder="Paste your Sigstore bundle JSON here..."></textarea>
+                            <div class="button-container">
+                                <button id="clearSigstoreButton" class="clear-button" onclick="clearSigstoreInput()">Clear</button>
+                                <div class="file-input-container">
+                                    <label class="file-input-button" for="sigstoreFileInput">Upload</label>
+                                    <input type="file" id="sigstoreFileInput" accept=".json,.txt">                                    
+                                </div>
+                                <span class="file-name" id="sigstoreFileName"></span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="dsse-button-group" class="button-group">
                     <button onclick="processDSSE()">DSSE Extract & Verify</button>
                 </div>
-
+                <div id="sigstore-button-group" class="button-group" style="display: none;">
+                    <button onclick="processSigstore()">Sigstore Extract & Verify</button>
+                </div>
                 <p class="info-text">Notice: support is currently offered for PGP, RSA and ECDSA keys only</p>
                 
             </div>
@@ -327,17 +363,26 @@
             
             // Show selected tab content and activate button
             document.getElementById(tabName + '-tab').classList.add('active');
-            event.target.classList.add('active');
+            document.querySelector(`.tab-button[onclick="switchTab('${tabName}')"]`).classList.add('active');
 
             // Show/hide appropriate button group
             if (tabName === 'dsse') {
                 document.getElementById('dsse-button-group').style.display = 'flex';
-                
+                document.getElementById('sigstore-button-group').style.display = 'none';
             } else {
                 document.getElementById('dsse-button-group').style.display = 'none';
-                
+                document.getElementById('sigstore-button-group').style.display = 'flex';
             }
         }
+
+        // Initialize the page with DSSE tab selected
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ensure DSSE tab is selected
+            document.querySelector('.tab-button[onclick="switchTab(\'dsse\')"]').classList.add('active');
+            document.getElementById('dsse-tab').classList.add('active');
+            document.getElementById('dsse-button-group').style.display = 'flex';
+            document.getElementById('sigstore-button-group').style.display = 'none';
+        });
 
         // Function to handle file selection for DSSE input
         document.getElementById('fileInput').addEventListener('change', function(e) {
@@ -378,11 +423,25 @@
         window.clearPubKeyInput = function() {
             document.getElementById('pubKeyInput').value = '';
         };
+        // Function to handle file selection for Sigstore bundle
+        document.getElementById('sigstoreFileInput').addEventListener('change', function(e) {
+                    if (this.files && this.files[0]) {
+                document.getElementById('sigstoreFileName').textContent = this.files[0].name;
+                document.getElementById('sigstoreFileName').style.display = 'inline';
+            }
+        });
 
-    
-        
+        // Function to clear Sigstore input
+        window.clearSigstoreInput = function() {
+            document.getElementById('sigstoreInput').value = '';
+        };
 
-      
+        // Function to clear Sigstore file input
+        window.clearSigstoreFileInput = function() {
+            document.getElementById('sigstoreFileInput').value = '';
+            document.getElementById('sigstoreFileName').textContent = '';
+            document.getElementById('sigstoreFileName').style.display = 'none';
+        };
         
     </script>
 </body>

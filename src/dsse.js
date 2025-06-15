@@ -1,6 +1,7 @@
 import forge from 'node-forge';
 import * as openpgp from 'openpgp';
 import { PublicKey, Signature, Ecdsa} from 'starkbank-ecdsa';
+import { X509Certificate } from '@peculiar/x509';
 
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -37,6 +38,24 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.readAsText(file);
         }
     });
+    // Add event listener for file input
+    document.getElementById('sigstoreFileInput').addEventListener('change', function(e) {
+        console.log('sigstoreFileInput', e.target.files[0]);
+        const fileName = e.target.files[0]?.name || '';
+        document.getElementById('sigstoreFileName').textContent = fileName;
+        
+        if (fileName) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                document.getElementById('sigstoreInput').value = e.target.result;
+            };
+            
+            reader.readAsText(file);
+        }
+    });
+
 });
 
 
@@ -68,12 +87,48 @@ function arrayBufferToHexString(arrayBuffer) {
 
     return hexString;
 }
+function arrayBufferToBase64(buffer) {
+    return Buffer.from(buffer).toString('base64');
+}
+
+function createPEMHeader(type) {
+    return `-----BEGIN ${type}-----\n`;
+}
+
+function createPEMFooter(type) {
+    return `\n-----END ${type}-----`;
+}
+
+function formatPEM(base64String) {
+    // Split the base64 string into lines of 64 characters
+    const lines = [];
+    for (let i = 0; i < base64String.length; i += 64) {
+        lines.push(base64String.slice(i, i + 64));
+    }
+    return lines.join('\n');
+}
+
+function extractPEMFromCertificate(certKey) {
+    console.info('extractPEMFromCertificate');
+    // get buffer from pemKey
+    console.info('certKey=', certKey);
+    const cert = new X509Certificate(certKey);
+    console.info('cert=', cert);
+    const publicKey = cert.publicKey;
+    console.info('publicKey=', publicKey);
+    // Convert public key to PEM format
+    const base64Key = arrayBufferToBase64(publicKey.rawData);
+    const pemKeyContent = createPEMHeader('PUBLIC KEY') + 
+                  formatPEM(base64Key) + 
+                  createPEMFooter('PUBLIC KEY');
+    return pemKeyContent;
+}
+
 
 // Function to extract and parse public key from PEM format
 async function extractPublicKeyFromPEM(pemKey) {
     try {
-        console.log('Extracting public key from PEM...');
-       
+        console.log('Extracting public key from PEM...');       
         // Try different key types based on headers
         if (pemKey.includes('-----BEGIN PUBLIC KEY-----')) {
             // For standard public keys
@@ -310,8 +365,6 @@ async function verifyDSSESignature(dsseEnvelope, publicKeyInfo) {
             console.log('Verifying with Starkbank-ECDSA');
             // Try to verify using starkbank-ecdsa
             return await verifyStarkbankSignature(pae, dsseEnvelope.signatures, publicKey);
-            
-            
         } else {
             return await verifyWithForge(pae, dsseEnvelope.signatures, publicKey);
         }
@@ -444,6 +497,54 @@ async function verifySignature(dsseEnvelope, verificationKey) {
         return false;
     }
 }
+
+function extractPayload(dsseEnvelope) {
+    // Decode the base64 payload
+    let decodedPayload;
+    try {
+        decodedPayload = forge.util.decode64(dsseEnvelope.payload);
+        console.log('Decoded payload as binary');
+    } catch (decodeError) {
+        console.error('Error decoding base64 payload:', decodeError);
+        decodedPayload = dsseEnvelope.payload; // Fallback to showing the raw payload
+    }
+    
+    // Try to parse the decoded payload as JSON if possible
+    let formattedContent;
+    try {
+        // First try to interpret as UTF-8 text
+        const textDecoder = new TextDecoder('utf-8');
+        const payloadText = typeof decodedPayload === 'string' ? 
+            decodedPayload : 
+            textDecoder.decode(new Uint8Array(decodedPayload.length).map((_, i) => decodedPayload.charCodeAt(i)));
+        
+        console.log('Attempting to parse as JSON');
+        const jsonContent = JSON.parse(payloadText);
+        formattedContent = JSON.stringify(jsonContent, null, 2);
+        console.log('Successfully parsed as JSON');
+    } catch (jsonError) {
+        console.warn('Not valid JSON, displaying as text:', jsonError);
+        errorDiv.textContent = `Error: Not valid JSON, displaying as text, detailed error: ${jsonError}`;
+        errorDiv.className = 'verification-status invalid';
+        errorDiv.style.display = 'block';
+        // If not JSON, display as text if it looks like text
+        if (typeof decodedPayload === 'string') {
+            formattedContent = decodedPayload;
+        } else {
+            // Try to convert binary to string
+            try {
+                const textDecoder = new TextDecoder('utf-8');
+                formattedContent = textDecoder.decode(new Uint8Array(decodedPayload.length)
+                    .map((_, i) => decodedPayload.charCodeAt(i)));
+            } catch (textError) {
+                console.error('Error converting to text:', textError);
+                formattedContent = 'Binary content (unable to display as text)';
+            }
+        }
+    }
+    return formattedContent;
+}
+
 // function for display reset
 function resetDisplay(resultDiv,errorDiv, verificationStatus) {
     resultDiv.style.display = 'none';
@@ -455,7 +556,61 @@ function resetDisplay(resultDiv,errorDiv, verificationStatus) {
     verificationStatus.classList.remove('valid', 'invalid', 'unknown');
 }
 
-
+// Properly export these functions to be accessible from HTML
+window.processSigstore = async function() {
+    const verificationStatus = document.getElementById('verificationStatus');
+    const sigstoreInput = document.getElementById('sigstoreInput').value;
+    const resultDiv = document.getElementById('result');
+    const errorDiv = document.getElementById('error');    
+    // Reset displays
+    resetDisplay(resultDiv,errorDiv, verificationStatus);
+    // validate input
+    if (!sigstoreInput.trim()) {
+        errorDiv.textContent = 'Error: Please provide input either by pasting JSON or uploading a file';
+        errorDiv.style.display = 'block';
+        return;
+    }
+    let sigstoreBundle;
+    try{
+        // parse sigstore bundle
+        sigstoreBundle = JSON.parse(sigstoreInput);
+    } catch (error) {
+        errorDiv.textContent = `Error parsing Sigstore bundle, please verify the input is a valid JSON format: ${error.message}`;
+        errorDiv.style.display = 'block';
+    }
+    console.info('before sigstore verify');        
+    // extract the dsse envelope from the sigstore bundle
+    let dsseEnvelope;
+    try{
+        dsseEnvelope = sigstoreBundle.dsseEnvelope;
+    } catch (error) {
+        errorDiv.textContent = `Error parsing Sigstore bundle, please verify the input is a valid Sigstore bundle: ${error.message}`;
+        errorDiv.style.display = 'block';
+    }    
+    // handling signature verification
+    const derKey = sigstoreBundle.verificationMaterial.certificate.rawBytes;
+    console.info('rawBytes=', derKey);
+    
+    let verificationKey = extractPEMFromCertificate(derKey);
+    console.log('verificationKey=', verificationKey);
+    // If a verification key is provided, attempt verification
+    if (verificationKey) {
+        await verifySignature(dsseEnvelope, verificationKey);
+    }
+    // handle the payload
+    // handle the payload
+    const formattedContent = extractPayload(dsseEnvelope);
+    // Display the result
+    resultDiv.textContent = formattedContent;
+    resultDiv.style.display = 'block';
+    
+    // Ensure the right panel is visible on mobile
+    if (window.innerWidth <= 768) {
+        const rightPanel = document.querySelector('.right-panel');
+        rightPanel.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+}
 
 window.processDSSE = async function() {
     const verificationStatus = document.getElementById('verificationStatus');
@@ -489,50 +644,8 @@ window.processDSSE = async function() {
         if (verificationKey) {
             await verifySignature(dsseEnvelope, verificationKey);
         }
-        
-        // Decode the base64 payload
-        let decodedPayload;
-        try {
-            decodedPayload = forge.util.decode64(dsseEnvelope.payload);
-            console.log('Decoded payload as binary');
-        } catch (decodeError) {
-            console.error('Error decoding base64 payload:', decodeError);
-            decodedPayload = dsseEnvelope.payload; // Fallback to showing the raw payload
-        }
-        
-        // Try to parse the decoded payload as JSON if possible
-        let formattedContent;
-        try {
-            // First try to interpret as UTF-8 text
-            const textDecoder = new TextDecoder('utf-8');
-            const payloadText = typeof decodedPayload === 'string' ? 
-                decodedPayload : 
-                textDecoder.decode(new Uint8Array(decodedPayload.length).map((_, i) => decodedPayload.charCodeAt(i)));
-            
-            console.log('Attempting to parse as JSON');
-            const jsonContent = JSON.parse(payloadText);
-            formattedContent = JSON.stringify(jsonContent, null, 2);
-            console.log('Successfully parsed as JSON');
-        } catch (jsonError) {
-            console.warn('Not valid JSON, displaying as text:', jsonError);
-            errorDiv.textContent = `Error: Not valid JSON, displaying as text, detailed error: ${jsonError}`;
-            errorDiv.className = 'verification-status invalid';
-            errorDiv.style.display = 'block';
-            // If not JSON, display as text if it looks like text
-            if (typeof decodedPayload === 'string') {
-                formattedContent = decodedPayload;
-            } else {
-                // Try to convert binary to string
-                try {
-                    const textDecoder = new TextDecoder('utf-8');
-                    formattedContent = textDecoder.decode(new Uint8Array(decodedPayload.length)
-                        .map((_, i) => decodedPayload.charCodeAt(i)));
-                } catch (textError) {
-                    console.error('Error converting to text:', textError);
-                    formattedContent = 'Binary content (unable to display as text)';
-                }
-            }
-        }
+        // handle the payload
+        const formattedContent = extractPayload(dsseEnvelope);
         
         // Display the result
         resultDiv.textContent = formattedContent;

@@ -6,3 +6,7 @@
 /localhost.pem
 /node_modules
 /internal-notes.txt
+/der2
+/payload.json
+/certificate.pem
+/ecdsa_test.js
