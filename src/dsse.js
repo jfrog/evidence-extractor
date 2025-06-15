@@ -1,62 +1,72 @@
-// Add event listener for file input
-document.getElementById('fileInput').addEventListener('change', function(e) {
-    const fileName = e.target.files[0]?.name || '';
-    document.getElementById('fileName').textContent = fileName;
-    
-    if (fileName) {
-        const file = e.target.files[0];
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            document.getElementById('dsseInput').value = e.target.result;
-        };
-        
-        reader.readAsText(file);
-    }
-});
+import forge from 'node-forge';
+import * as openpgp from 'openpgp';
+import { PublicKey, Signature, Ecdsa} from 'starkbank-ecdsa';
 
-// Add event listener for certificate input
-document.getElementById('certInput').addEventListener('change', function(e) {
-    const fileName = e.target.files[0]?.name || '';
-    document.getElementById('certFileName').textContent = fileName;
-
-    if (fileName) {
-        const file = e.target.files[0];
-        const reader = new FileReader();
+// Wait for DOM to be fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener for file input
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        const fileName = e.target.files[0]?.name || '';
+        document.getElementById('fileName').textContent = fileName;
         
-        reader.onload = function(e) {
-            document.getElementById('pubKeyInput').value = e.target.result;
-        };
-        
-        reader.readAsText(file);
-    }
-});
-
-// Function to safely decode base64
-function safeBase64Decode(base64String) {
-    try {
-        // Remove any non-base64 characters
-        const cleanBase64 = base64String.replace(/[^A-Za-z0-9+/=]/g, '');
-        
-        // Add padding if needed
-        let paddedBase64 = cleanBase64;
-        const padding = cleanBase64.length % 4;
-        if (padding) {
-            paddedBase64 += '='.repeat(4 - padding);
+        if (fileName) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                document.getElementById('dsseInput').value = e.target.result;
+            };
+            
+            reader.readAsText(file);
         }
-        
-        // Use forge for base64 decoding
-        return forge.util.decode64(paddedBase64);
-    } catch (error) {
-        console.error('Base64 decoding error:', error);
-        throw new Error('Invalid base64 encoding in the key');
+    });
+
+    // Add event listener for certificate input
+    document.getElementById('certInput').addEventListener('change', function(e) {
+        const fileName = e.target.files[0]?.name || '';
+        document.getElementById('certFileName').textContent = fileName;
+
+        if (fileName) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                document.getElementById('pubKeyInput').value = e.target.result;
+            };
+            
+            reader.readAsText(file);
+        }
+    });
+});
+
+
+function str2ab(str) {
+    const buf = new ArrayBuffer(str.length);
+    const bufView = new Uint8Array(buf);
+    for (let i = 0, strLen = str.length; i < strLen; i++) {
+        bufView[i] = str.charCodeAt(i);
     }
+    return buf;
 }
 
-// Helper function to replace literal \n with actual newlines
-function replaceNewlines(text) {
-    if (!text) return text;
-    return text.replace(/\\n/g, '\n');
+function arrayBufferToHexString(arrayBuffer) {
+    if (typeof arrayBuffer !== 'object') {
+        throw new TypeError('Expected input of arrayBuffer to be an ArrayBuffer Object');
+    }
+
+    const byteArray = new Uint8Array(arrayBuffer);
+    let hexString = '';
+    let nextHexByte;
+
+    for (let i = 0; i < byteArray.byteLength; i++) {
+        nextHexByte = byteArray[i].toString(16);
+        if (nextHexByte.length < 2) {
+            nextHexByte = '0' + nextHexByte;
+        }
+        hexString += nextHexByte;
+    }
+
+    return hexString;
 }
 
 // Function to extract and parse public key from PEM format
@@ -75,8 +85,20 @@ async function extractPublicKeyFromPEM(pemKey) {
                     format: 'publicKey' 
                 };
             } catch (e) {
-                console.error('Failed to parse standard public key:', e);
-                throw new Error('Failed to parse public key: ' + e.message);
+                console.error('Failed to parse standard public key using forge:', e);
+                console.log('Trying to import key using starkbank-ecdsa');
+                try{
+                    const key = PublicKey.fromPem(pemKey);
+                    console.log('Imported key using starkbank-ecdsa, will now return it');
+                    return { 
+                        key: key, 
+                        format: 'starkbank-ecdsa',
+                        pem: pemKey
+                    };
+                } catch (e) {
+                    console.error('Failed to import key using starkbank-ecdsa:', e);
+                    throw new Error('Failed to parse public key: ' + e.message);
+                }
             }
         } else if (pemKey.includes('-----BEGIN CERTIFICATE-----')) {
             // For X.509 certificates
@@ -86,11 +108,58 @@ async function extractPublicKeyFromPEM(pemKey) {
                 const publicKey = cert.publicKey;
                 return { 
                     key: publicKey, 
-                    format: 'certificate' 
+                    format: 'certificate',
+                    pem: pemKey
                 };
             } catch (e) {
-                console.error('Failed to parse certificate:', e);
-                throw new Error('Failed to parse certificate: ' + e.message);
+                console.error('Forge Failed to parse certificate, trying Web Crypto API:', e);
+                // Try to parse the certificate with Web Crypto API
+                try {
+                    // Strip the header, footer, and line breaks
+                    const pemHeader = "-----BEGIN CERTIFICATE-----";
+                    const pemFooter = "-----END CERTIFICATE-----";
+                    const pemContents = pemKey.replace(pemHeader, '').replace(pemFooter, '').replace(/\r?\n|\r/g, '').trim();
+                    console.log('pemContents=', pemContents);
+                    const binaryDerString = window.atob(pemContents);
+                    console.log('binaryDerString=', binaryDerString);
+                    const keyBuffer = str2ab(binaryDerString);
+                    console.log('keyBuffer=', keyBuffer);
+
+                    const hex = arrayBufferToHexString(keyBuffer);
+                    console.log('hex=', hex);
+                    
+                    const key = await crypto.subtle.importKey(
+                        'spki',
+                        keyBuffer,
+                        {
+                            name: "ECDSA",
+                            namedCurve: "P-384"
+                        },
+                        true,
+                        ["verify"]
+                    );
+                    return { 
+                        key: key, 
+                        format: 'certificate',
+                        pem: pemKey
+                    };
+                } catch (cryptoError) {
+                    console.error('Web Crypto API failed, falling back to starkbank:', cryptoError, cryptoError.message);     
+                    // try to parse with starkbank-ecdsa                    
+                    try {                       
+                        const key = PublicKey.fromPem(pemKey);
+
+                        console.log('Imported key using starkbank-ecdsa, will now retirn it');
+                        return { 
+                            key: key, 
+                            format: 'starkbank-ecdsa',
+                            pem: pemKey
+                        };
+                    } catch (starkbankError) {
+                        console.error('Starkbank-ECDSA import key failed:', starkbankError, starkbankError.message);
+                        throw new Error('Failed to parse certificate: ' + starkbankError.message);
+                    }
+                }
             }
         } else if (pemKey.includes('-----BEGIN RSA PUBLIC KEY-----')) {
             // For RSA public keys
@@ -138,6 +207,37 @@ async function extractPublicKeyFromPEM(pemKey) {
     }
 }
 
+// Function to verify signature using starkbank-ecdsa
+async function verifyStarkbankSignature(pae, signatures, publicKey) {
+    let counter = 0;
+    let signatureValid = false;
+    for (const signature of signatures) {
+        counter++;               
+        console.log('Attempting starkbank-ecdsa verification for signature:', counter);                
+        try {
+            // Convert the PAE to a hash using SHA-256
+            const signatureBase64 = signature.sig;
+            const signatureBinary = forge.util.decode64(signatureBase64);
+            
+            // Create a starkbank signature object
+            const starkbankSignature = Signature.fromDer(signatureBinary);            
+            // Verify the signature
+            signatureValid = Ecdsa.verify(pae, starkbankSignature, publicKey);            
+        } catch (error) {
+            console.error('Starkbank signature verification error:', error);
+            throw new Error('Starkbank signature verification failed: ' + error.message);
+        }
+
+        if (signatureValid) {
+            console.log('Starkbank-ECDSA signature verification succeeded');
+            return true;
+        }        
+    }
+    console.log('Starkbank-ECDSA none of the signatures verification succeeded');
+    return false;
+    
+}
+
 // Function to verify DSSE signature using forge.js
 async function verifyDSSESignature(dsseEnvelope, publicKeyInfo) {
     try {
@@ -156,29 +256,28 @@ async function verifyDSSESignature(dsseEnvelope, publicKeyInfo) {
         // Properly implement the DSSE PAE (Pre-Authentication Encoding) format
         const paePrefix = `DSSEv1 ${payloadType.length} ${payloadType} ${payloadDecoded.length} `;
         const pae = paePrefix + payloadDecoded;
-        //console.log('pae=', pae);
-                
+        
         // Handle different key formats
         const publicKey = publicKeyInfo.key;
         console.log('publicKeyInfo.format=', publicKeyInfo.format);
+        
         // Special handling for PGP keys
         if (publicKeyInfo.format === 'pgpPublicKey') {
             console.log('Verifying with PGP public key using OpenPGP.js');            
             try {                
                 // Create a message from the PAE data for verification
                 const message = await openpgp.createMessage({ text: pae });
-                //console.log('message=', message);
                 
                 // loop over all signatures and verify each one
                 let counter = 0;
                 for (const signature of dsseEnvelope.signatures) {
                     counter++;   
-                    try{
+                    try {
                         console.log('trying to verify signature number=', counter);
                         // Convert signature to the right format for OpenPGP.js
                         // OpenPGP.js expects an armored signature
-                        const signatureBinary = forge.util.decode64(signature.sig);
-                        // console.log('signatureBinary=', signatureBinary);                                  
+                        const signatureBase64 = signature.sig;
+                        const signatureBinary = forge.util.decode64(signatureBase64);
                         // Create a detached signature object
                         const detachedSignature = await openpgp.readSignature({
                             armoredSignature: signatureBinary
@@ -197,10 +296,9 @@ async function verifyDSSESignature(dsseEnvelope, publicKeyInfo) {
                             return true;
                         } catch (error) {
                             console.error('PGP signature verification failed:', error);
-                            //return false; now we continue with the next signature
                         }
                     } catch (error) {
-                        console.error('Error during PGP verification of signature:',  error, 'signature number=', counter);
+                        console.error('Error during PGP verification of signature:', error, 'signature number=', counter);
                         console.info('Continue to next signature');
                     }
                 }                           
@@ -208,66 +306,71 @@ async function verifyDSSESignature(dsseEnvelope, publicKeyInfo) {
                 console.error('Error during PGP verification:', error);
                 throw new Error('PGP signature verification failed: ' + error.message);
             }
-        }else {
-            console.log('Verifying with Forge.js');
-            // try to verify using forge.js
+        } else if (publicKeyInfo.format === 'starkbank-ecdsa') {
+            console.log('Verifying with Starkbank-ECDSA');
+            // Try to verify using starkbank-ecdsa
+            return await verifyStarkbankSignature(pae, dsseEnvelope.signatures, publicKey);
             
-            // loop over all signature and try to verify any of them
-            let counter=0
-            for (const signature of dsseEnvelope.signatures) {
-                counter++;   
-                // Get the signature algorithm                
-                const sigAlg = signature.keyid || '';
-                console.log('Checking signature, signature algorithm/key ID:', sigAlg, 'signature number=', counter);
-                // Create message digest based on signature algorithm (default to SHA-256)
-                let md = forge.md.sha256.create();
-                // Check if we can detect the algorithm from keyid
-                if (sigAlg.toLowerCase().includes('sha1')) {
-                    md = forge.md.sha1.create();
-                } else if (sigAlg.toLowerCase().includes('sha384')) {
-                    md = forge.md.sha384.create();
-                } else if (sigAlg.toLowerCase().includes('sha512')) {
-                    md = forge.md.sha512.create();
-                }
-                // Update message digest with the properly encoded PAE data
-                md.update(pae);
-                
-                    // Convert base64 signature to binary
-                const signatureBase64 = signature.sig;
-                //console.log('signatureBase64', signatureBase64);
-                const signatureBinary = forge.util.decode64(signatureBase64);
-                //console.log('signatureBinary', signatureBinary);
-                
-                // Use the appropriate verification method based on the key
-                try {
-                    const isValid = publicKey.verify(md.digest().bytes(), signatureBinary);
-                    console.log('Signature verification result:', isValid);
-                    return isValid;
-                } catch (verifyError) {
-                    console.error('Verification failed with error:', verifyError, 'signature number=', counter);
-                    
-                    // Try an alternative approach if the first one fails
-                    try {
-                        console.log('Attempting alternative verification approach...');
-                        // Create a verifier
-                        const verifier = forge.pki.createVerifier(md.algorithm);
-                        verifier.update(pae);
-                        const isValid = verifier.verify(publicKey, signatureBinary);
-                        console.log('Alternative verification result:', isValid);
-                        return isValid;
-                    } catch (altError) {
-                        console.error('Alternative verification failed:', altError, 'signature number=', counter);
-                        console.info('Continue to next signature');
-                        //throw new Error('Signature verification failed with both approaches');
-                        // Now we continue to the next signature
-                    }
-                }
-           
-            }
-        }        
+            
+        } else {
+            return await verifyWithForge(pae, dsseEnvelope.signatures, publicKey);
+        }
+        
     } catch (error) {
         console.error('Verification error:', error);
         throw new Error(`Signature verification failed: ${error.message}`);
+    }
+    return false;
+}
+
+// Helper function for forge.js verification
+async function verifyWithForge(pae, signatures, publicKey) {
+    console.log('Verifying with Forge.js');
+    let counter = 0;
+    for (const signature of signatures) {
+        counter++;
+        // Get the signature algorithm                
+        const sigAlg = signature.keyid || '';
+        console.log('Checking signature, signature algorithm/key ID:', sigAlg, 'signature number=', counter);
+        // Create message digest based on signature algorithm (default to SHA-256)
+        let md = forge.md.sha256.create();
+        // Check if we can detect the algorithm from keyid
+        if (sigAlg.toLowerCase().includes('sha1')) {
+            md = forge.md.sha1.create();
+        } else if (sigAlg.toLowerCase().includes('sha384')) {
+            md = forge.md.sha384.create();
+        } else if (sigAlg.toLowerCase().includes('sha512')) {
+            md = forge.md.sha512.create();
+        }
+        // Update message digest with the properly encoded PAE data
+        md.update(pae);
+        
+        // Convert base64 signature to binary
+        const signatureBase64 = signature.sig;
+        const signatureBinary = forge.util.decode64(signatureBase64);
+        
+        // Use the appropriate verification method based on the key
+        try {
+            const isValid = publicKey.verify(md.digest().bytes(), signatureBinary);
+            console.log('Signature verification result:', isValid);
+            return isValid;
+        } catch (verifyError) {
+            console.error('Verification failed with error:', verifyError, 'signature number=', counter);
+            
+            // Try an alternative approach if the first one fails
+            try {
+                console.log('Attempting alternative verification approach...');
+                // Create a verifier
+                const verifier = forge.pki.createVerifier(md.algorithm);
+                verifier.update(pae);
+                const isValid = verifier.verify(publicKey, signatureBinary);
+                console.log('Alternative verification result:', isValid);
+                return isValid;
+            } catch (altError) {
+                console.error('Alternative verification failed:', altError, 'signature number=', counter);
+                console.info('Continue to next signature');
+            }
+        }
     }
     return false;
 }
@@ -307,8 +410,6 @@ async function verifySignature(dsseEnvelope, verificationKey) {
             return false;
         }
         
-        //console.log('keyText', keyText);
-        
         // Extract the public key from PEM format
         const publicKeyInfo = await extractPublicKeyFromPEM(keyText);
         
@@ -343,25 +444,28 @@ async function verifySignature(dsseEnvelope, verificationKey) {
         return false;
     }
 }
-
-// Properly export these functions to be accessible from HTML
-async function processDSSE() {
-    // Clear verification status
-    const verificationStatus = document.getElementById('verificationStatus');
+// function for display reset
+function resetDisplay(resultDiv,errorDiv, verificationStatus) {
+    resultDiv.style.display = 'none';
+    resultDiv.innerHTML = '';
+    errorDiv.style.display = 'none';
+    errorDiv.innerHTML = '';
     verificationStatus.innerHTML = '';
     verificationStatus.style.display = 'none';
     verificationStatus.classList.remove('valid', 'invalid', 'unknown');
-    
+}
+
+
+
+window.processDSSE = async function() {
+    const verificationStatus = document.getElementById('verificationStatus');
     const input = document.getElementById('dsseInput').value;
     const resultDiv = document.getElementById('result');
     const errorDiv = document.getElementById('error');
     const pubKeyInput = document.getElementById('pubKeyInput');
     
     // Reset displays
-    resultDiv.style.display = 'none';
-    resultDiv.innerHTML = '';
-    errorDiv.style.display = 'none';
-    errorDiv.innerHTML = '';
+    resetDisplay(resultDiv,errorDiv, verificationStatus);
     
     if (!input.trim()) {
         errorDiv.textContent = 'Error: Please provide input either by pasting JSON or uploading a file';
@@ -381,7 +485,6 @@ async function processDSSE() {
         // Check if we have a verification key (either from file or pasted)
         let verificationKey = pubKeyInput.value.trim();
         
-     
         // If a verification key is provided, attempt verification
         if (verificationKey) {
             await verifySignature(dsseEnvelope, verificationKey);
@@ -445,4 +548,4 @@ async function processDSSE() {
         errorDiv.textContent = `Error: ${error.message}`;
         errorDiv.style.display = 'block';
     }
-}
+}; 
