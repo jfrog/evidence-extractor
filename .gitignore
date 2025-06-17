@@ -8,5 +8,7 @@
 /internal-notes.txt
 /der2
 /payload.json
+/payload2.json
 /certificate.pem
 /ecdsa_test.js
+/timestamp

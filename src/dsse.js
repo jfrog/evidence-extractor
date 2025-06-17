@@ -3,6 +3,8 @@ import * as openpgp from 'openpgp';
 import { PublicKey, Signature, Ecdsa} from 'starkbank-ecdsa';
 import { X509Certificate } from '@peculiar/x509';
 
+const REKOR_HOST = 'https://rekor.sigstore.dev';
+
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Add event listener for file input
@@ -86,6 +88,12 @@ function arrayBufferToHexString(arrayBuffer) {
     }
 
     return hexString;
+}
+function stripCertificateContent(certificate) {
+    // remove -----BEGIN CERTIFICATE----- and -----END CERTIFICATE-----
+    const pemHeader = "-----BEGIN CERTIFICATE-----";
+    const pemFooter = "-----END CERTIFICATE-----";
+    return certificate.replace(pemHeader, '').replace(pemFooter, '').replace(/\r?\n|\r/g, '').trim();
 }
 function arrayBufferToBase64(buffer) {
     return Buffer.from(buffer).toString('base64');
@@ -171,9 +179,7 @@ async function extractPublicKeyFromPEM(pemKey) {
                 // Try to parse the certificate with Web Crypto API
                 try {
                     // Strip the header, footer, and line breaks
-                    const pemHeader = "-----BEGIN CERTIFICATE-----";
-                    const pemFooter = "-----END CERTIFICATE-----";
-                    const pemContents = pemKey.replace(pemHeader, '').replace(pemFooter, '').replace(/\r?\n|\r/g, '').trim();
+                    const pemContents = stripCertificateContent(pemKey)
                     console.log('pemContents=', pemContents);
                     const binaryDerString = window.atob(pemContents);
                     console.log('binaryDerString=', binaryDerString);
@@ -428,10 +434,9 @@ async function verifyWithForge(pae, signatures, publicKey) {
     return false;
 }
 
-async function verifySignature(dsseEnvelope, verificationKey) {
+async function verifySignature(statusDiv, dsseEnvelope, verificationKey) {
     try {
-        // Create a verification status element
-        const statusDiv = document.getElementById('verificationStatus');
+        // Create a verification status element        
         statusDiv.style.display = 'block';
         statusDiv.className = 'verification-status unknown';
         statusDiv.textContent = 'Verifying signature...';
@@ -469,9 +474,7 @@ async function verifySignature(dsseEnvelope, verificationKey) {
         // Verify the DSSE signature
         const isValid = await verifyDSSESignature(dsseEnvelope, publicKeyInfo);
         
-        if (isValid) {
-            statusDiv.className = 'verification-status valid';
-            statusDiv.textContent = 'Signature verification successful! The DSSE envelope is valid.';
+        if (isValid) {            
             return true;
         } else {
             statusDiv.className = 'verification-status invalid';
@@ -546,7 +549,7 @@ function extractPayload(dsseEnvelope) {
 }
 
 // function for display reset
-function resetDisplay(resultDiv,errorDiv, verificationStatus) {
+function resetDisplay(resultDiv,errorDiv, verificationStatus, verificationWarning) {
     resultDiv.style.display = 'none';
     resultDiv.innerHTML = '';
     errorDiv.style.display = 'none';
@@ -554,16 +557,119 @@ function resetDisplay(resultDiv,errorDiv, verificationStatus) {
     verificationStatus.innerHTML = '';
     verificationStatus.style.display = 'none';
     verificationStatus.classList.remove('valid', 'invalid', 'unknown');
+    verificationWarning.innerHTML = '';
+    verificationWarning.style.display = 'none';
+}
+
+// function to verify a tlog entry
+async function verifyTlogEntry(tlogEntry, dsseEnvelope, rawCertificate) {
+       
+    const statusDiv = document.getElementById('verificationStatus');
+
+    console.info('verifying tlog entry=', tlogEntry);
+    // call {REKOR_HOST}/api/v1/log/entries?logIndex={logIndex}
+    const url = `${REKOR_HOST}/api/v1/log/entries?logIndex=${tlogEntry.logIndex}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    // verify the tlog entry
+    // get integratedTime from data.{}.integratedTime
+    for (const key in data) {
+        if (data[key]) {            
+            const integratedTime = data[key].integratedTime;
+            // verify the integratedTime matches
+            if (!(integratedTime == tlogEntry.integratedTime)) {
+                statusDiv.textContent = 'Error: Rekor Tlog entry integratedTime mismatch';
+                statusDiv.className = 'verification-status invalid';
+                statusDiv.style.display = 'block';
+                return false;
+            } else {
+                console.info('tlog entry integratedTime matches, continue to next tlog entry');
+            }
+            // verify the logIndex matches
+            if (!(data[key].logIndex == tlogEntry.logIndex)) {
+                statusDiv.textContent = 'Error: Rekor Tlog entry logIndex mismatch';
+                statusDiv.className = 'verification-status invalid';
+                statusDiv.style.display = 'block';
+                return false;
+            } else {
+                console.info('tlog entry logIndex matches, continue to next tlog entry');
+            }
+            // verify the tlog entry signature matches
+            // get entry body
+            const entryBody = data[key].body;
+            // base64 decode the body
+            const entryBodyDecoded = forge.util.decode64(entryBody);
+            // verify body kind is dsse
+            const entryBodyJson = JSON.parse(entryBodyDecoded);
+            const bodyKind = entryBodyJson.kind;
+            if (bodyKind != 'dsse') {
+                statusDiv.textContent = 'Error: Rekor Tlog entry body kind is not dsse';
+                statusDiv.className = 'verification-status invalid';
+                statusDiv.style.display = 'block';
+                return false;
+            } else {
+                console.info('tlog entry body kind matches, continue to next tlog entry');
+            }
+            // verify the tlog entry signature matches
+            const responseSignatures = entryBodyJson.spec.signatures;
+            // for each signature, verify the signature is in tlogEntry signatures
+            for (const responseSignature of responseSignatures) {
+                const responseSig = responseSignature.signature;
+                // itterate all dsse envelope signatures and check if responseSig is one of them
+                let signatureFound = false;
+                for (const dsseSignature of dsseEnvelope.signatures) {                   
+                    if (dsseSignature.sig == responseSig) {
+                        signatureFound = true;
+                    }
+                }
+                if (!signatureFound) {
+                    statusDiv.textContent = 'Error: Rekor Tlog entry signature not found';
+                    statusDiv.className = 'verification-status invalid';
+                    statusDiv.style.display = 'block';
+                    return false;
+                } else {
+                    console.info('tlog entry signature matches, continue to next tlog entry');
+                }
+                console.info('All tlog entry signatures appear on dsse signatures list');
+                 // check tlog entry verifier
+                const responseVerifier = responseSignature.verifier;
+                // base64 decode the verifier
+                const responseVerifierDecoded = forge.util.decode64(responseVerifier);
+                const responseVerifierStriped = stripCertificateContent(responseVerifierDecoded);
+                
+
+                // verify the verifier is the same as the raw certificate
+                if (responseVerifierStriped != rawCertificate) {
+                    statusDiv.textContent = 'Error: Rekor Tlog entry verifier mismatch';
+                    statusDiv.className = 'verification-status invalid';
+                    statusDiv.style.display = 'block';
+                    return false;
+                } else {
+                    console.info('tlog entry verifier matches, continue to next tlog entry');
+                }
+            }
+            
+        }else{
+            statusDiv.textContent = 'Error: Rekor Tlog entry not found';
+            statusDiv.className = 'verification-status invalid';
+            statusDiv.style.display = 'block';
+            return false;
+        }
+
+    }
+    // if we get here, all tlog entries were verified successfully
+    return true;
 }
 
 // Properly export these functions to be accessible from HTML
 window.processSigstore = async function() {
     const verificationStatus = document.getElementById('verificationStatus');
+    const verificationWarning = document.getElementById('verificationWarning');
     const sigstoreInput = document.getElementById('sigstoreInput').value;
     const resultDiv = document.getElementById('result');
     const errorDiv = document.getElementById('error');    
     // Reset displays
-    resetDisplay(resultDiv,errorDiv, verificationStatus);
+    resetDisplay(resultDiv,errorDiv, verificationStatus, verificationWarning);
     // validate input
     if (!sigstoreInput.trim()) {
         errorDiv.textContent = 'Error: Please provide input either by pasting JSON or uploading a file';
@@ -589,15 +695,64 @@ window.processSigstore = async function() {
     }    
     // handling signature verification
     const derKey = sigstoreBundle.verificationMaterial.certificate.rawBytes;
-    console.info('rawBytes=', derKey);
     
     let verificationKey = extractPEMFromCertificate(derKey);
-    console.log('verificationKey=', verificationKey);
+    //console.log('verificationKey=', verificationKey);
     // If a verification key is provided, attempt verification
-    if (verificationKey) {
-        await verifySignature(dsseEnvelope, verificationKey);
+    if (!verificationKey) {
+        verificationStatus.className = 'verification-status invalid';
+        verificationStatus.textContent = 'Error: Signature verification failed, could not locate certificate in the sigstore bundle';
+        verificationStatus.style.display = 'block';
+    }else{    
+        const verified = await verifySignature(verificationStatus, dsseEnvelope, verificationKey);
+        // if the dsse was not tampered with. lets check rekor, if we can
+        if (!verified){
+            verificationStatus.className = 'verification-status invalid';
+            verificationStatus.textContent = 'Error: Signature verification failed, cerificate verification on dsse conten failed';
+            verificationStatus.style.display = 'block';
+            
+        }else {
+            // verify rekor index integrity
+            const tlogEntries = sigstoreBundle.verificationMaterial.tlogEntries            
+            if (tlogEntries) {
+                let allTlogsVerified = true;
+                // this is a public bundle, so we will check it against rekor data
+                // verify each tlog entry - logIndex
+                for (const tlogEntry of tlogEntries) {
+                    const logIndex = tlogEntry.logIndex;
+                    console.info('logIndex=', logIndex);
+                    // verify the tlog entry
+                    const tlogEntryVerified = await verifyTlogEntry(tlogEntry, dsseEnvelope, derKey);
+                    console.info('tlogEntry with index=', logIndex, 'verification result is', tlogEntryVerified);        
+                    if (!tlogEntryVerified) {
+                        allTlogsVerified = false;
+                        verificationStatus.textContent = 'Rekor transparency log verification failed for entry with index=' + logIndex;
+                        verificationStatus.className = 'verification-status invalid';
+                        verificationStatus.style.display = 'block';
+                       
+                    }
+                }
+                if (allTlogsVerified){
+                    verificationStatus.className = 'verification-status valid';
+                    verificationStatus.textContent = 'Signature verification successful! The DSSE envelope was not tampered with, Rekor transparency log verified successfully for all rekor log entries, matching: integratedTime, logIndex, body kind, signature, and certificate';
+                    verificationStatus.style.display = 'block';
+                }
+            } else {
+                // this is a private bundle, so we will not check it against rekor data
+                console.info('tlogEntries not found, skipping tlog entry verification');
+                // set result
+                verificationStatus.className = 'verification-status valid';
+                verificationStatus.textContent = 'Signature verification successful! The DSSE envelope was not tampered with, see validation warning for further details';
+                verificationStatus.style.display = 'block';
+                // set warning
+                verificationWarning.textContent = 'The provided Sigstore bundle details were not added to rekor, therefore Rekor entries verification was skipped, it is recommended to farther verify the bundle certificate';
+                verificationWarning.style.display = 'block';
+                verificationWarning.className = 'verification-warning';    
+
+                
+            }
+        }
     }
-    // handle the payload
     // handle the payload
     const formattedContent = extractPayload(dsseEnvelope);
     // Display the result
@@ -614,13 +769,14 @@ window.processSigstore = async function() {
 
 window.processDSSE = async function() {
     const verificationStatus = document.getElementById('verificationStatus');
+    const verificationWarning = document.getElementById('verificationWarning');
     const input = document.getElementById('dsseInput').value;
     const resultDiv = document.getElementById('result');
     const errorDiv = document.getElementById('error');
     const pubKeyInput = document.getElementById('pubKeyInput');
     
     // Reset displays
-    resetDisplay(resultDiv,errorDiv, verificationStatus);
+    resetDisplay(resultDiv,errorDiv, verificationStatus, verificationWarning);
     
     if (!input.trim()) {
         errorDiv.textContent = 'Error: Please provide input either by pasting JSON or uploading a file';
@@ -642,8 +798,13 @@ window.processDSSE = async function() {
         
         // If a verification key is provided, attempt verification
         if (verificationKey) {
-            await verifySignature(dsseEnvelope, verificationKey);
-        }
+            const verified = await verifySignature(verificationStatus, dsseEnvelope, verificationKey);
+            if (verified){
+                verificationStatus.className = 'verification-status valid';
+                verificationStatus.textContent = 'Signature verification successful! The DSSE envelope was not tampered with, ';
+                verificationStatus.style.display = 'block';
+            }
+        }        
         // handle the payload
         const formattedContent = extractPayload(dsseEnvelope);
         

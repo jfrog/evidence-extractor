@@ -174,6 +174,17 @@
             border: 1px solid #ffeeba;
         }
         
+        .verification-warning {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+            margin-bottom: 10px;
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        
         @media (max-width: 768px) {
             .app-container {
                 flex-direction: column;
@@ -325,7 +336,7 @@
                 <div id="sigstore-button-group" class="button-group" style="display: none;">
                     <button onclick="processSigstore()">Sigstore Extract & Verify</button>
                 </div>
-                <p class="info-text">Notice: support is currently offered for PGP, RSA and ECDSA keys only</p>
+                <p class="info-text">Notice: verification is done against the rekor log on https://rekor.sigstore.dev</p>
                 
             </div>
         </div>
@@ -337,6 +348,7 @@
                 <div class="results-section">
                     <div class="section-title">Verification Result</div>
                     <div id="verificationStatus" class="verification-status"></div>
+                    <div id="verificationWarning" class="verification-warning"></div>
                 </div>
                 
                 <div class="results-section">
