@@ -332,11 +332,12 @@
 
                 <div id="dsse-button-group" class="button-group">
                     <button onclick="processDSSE()">DSSE Extract & Verify</button>
+                    <p class="info-text">Notice: verification is local, data is not sent externally</p>
                 </div>
                 <div id="sigstore-button-group" class="button-group" style="display: none;">
-                    <button onclick="processSigstore()">Sigstore Extract & Verify</button>
-                </div>
-                <p class="info-text">Notice: verification is done against the rekor log on https://rekor.sigstore.dev</p>
+                    <button onclick="processSigstore()">DSSE Extract & Verify</button>
+                    <p class="info-text">Notice: verification is done against the rekor log on https://rekor.sigstore.dev</p>
+                </div>                
                 
             </div>
         </div>
@@ -410,30 +411,20 @@
                 document.getElementById('certFileName').textContent = this.files[0].name;
                 document.getElementById('certFileName').style.display = 'inline';
             }
-        });
-        
-        // Function to clear file input
-        window.clearFileInput = function() {
-            document.getElementById('fileInput').value = '';
-            document.getElementById('fileName').textContent = '';
-            document.getElementById('fileName').style.display = 'none';
-        };
-        
-        // Function to clear certificate input
-        window.clearCertInput = function() {
-            document.getElementById('certInput').value = '';
-            document.getElementById('certFileName').textContent = '';
-            document.getElementById('certFileName').style.display = 'none';
-        };
+        });        
         
         // Function to clear JSON input
         window.clearJsonInput = function() {
             document.getElementById('dsseInput').value = '';
+            // reset display            
+            window.resetDisplay();
         };
         
         // Function to clear public key input
         window.clearPubKeyInput = function() {
             document.getElementById('pubKeyInput').value = '';
+             // reset display            
+             window.resetVerificationMessages();
         };
         // Function to handle file selection for Sigstore bundle
         document.getElementById('sigstoreFileInput').addEventListener('change', function(e) {
@@ -446,6 +437,8 @@
         // Function to clear Sigstore input
         window.clearSigstoreInput = function() {
             document.getElementById('sigstoreInput').value = '';
+            // reset display            
+            window.resetDisplay();
         };
 
         // Function to clear Sigstore file input
