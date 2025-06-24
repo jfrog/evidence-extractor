@@ -2,7 +2,7 @@ import './test-setup.js';
 import { expect } from 'chai';
 import './utils.js';
 import {extractPublicKeyFromPEM} from './keys-utils.js';
-import './signature-verification.js';
+import {RSA_KEY_FORMAT} from './keys-helpers/rsa-helper.js';
 
 // Import the functions we want to test
 import {
@@ -39,7 +39,7 @@ nwIDAQAB
             const result = await extractPublicKeyFromPEM(validPublicKeyTrimmed);
             expect(result).to.have.property('key');
             expect(result).to.have.property('format');
-            expect(result.format).to.equal('publicKey');
+            expect(result.format).to.equal(RSA_KEY_FORMAT);
         });
 
         it('should throw error for invalid PEM format', async () => {

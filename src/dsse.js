@@ -1,7 +1,12 @@
 import forge from 'node-forge';
 import { resetDisplay, stripCertificateContent , resetVerificationMessages} from './utils.js';
-import {extractPEMFromCertificate, extractPublicKeyFromPEM} from './keys-utils.js';
-import {verifyStarkbankSignature, verifyWithForge, verifyOpenPGPSignature} from './signature-verification.js';
+import {verifyStarkbankSignature} from './keys-helpers/ecdsa-helper.js';
+
+import {PGP_KEY_FORMAT , verifyPGPSignature} from './keys-helpers/pgp-helper.js';
+import {STARBANK_KEY_FORMAT} from './keys-helpers/ecdsa-helper.js';
+import {extractPEMFromCertificate} from './keys-helpers/certificate-helper.js';
+import {verifyRSASignature} from './keys-helpers/rsa-helper.js';
+import {extractPublicKeyFromPEM} from './keys-utils.js';
 
 const REKOR_HOST = 'https://rekor.sigstore.dev';
 
@@ -93,24 +98,23 @@ async function verifyDSSESignature(dsseEnvelope, publicKeyInfo) {
         console.log('publicKeyInfo.format=', publicKeyInfo.format);
         
         // Special handling for PGP keys
-        if (publicKeyInfo.format === 'pgpPublicKey') {
+        if (publicKeyInfo.format === PGP_KEY_FORMAT) {
             // Try to verify using openpgp.js
             console.log('Verifying with PGP public key using OpenPGP.js');     
-            return await verifyOpenPGPSignature(pae, dsseEnvelope.signatures, publicKey);
-        } else if (publicKeyInfo.format === 'starkbank-ecdsa') {
+            return await verifyPGPSignature(pae, dsseEnvelope.signatures, publicKey);
+        } else if (publicKeyInfo.format === STARBANK_KEY_FORMAT) {
             console.log('Verifying with Starkbank-ECDSA');
             // Try to verify using starkbank-ecdsa
             return await verifyStarkbankSignature(pae, dsseEnvelope.signatures, publicKey);
         } else {
-            // Try to verify using forge
-            return await verifyWithForge(pae, dsseEnvelope.signatures, publicKey);
+            // Try to verify RSA public key using forge
+            return await verifyRSASignature(pae, dsseEnvelope.signatures, publicKey);
         }
         
     } catch (error) {
         console.error('Verification error:', error);
         throw new Error(`Signature verification failed: ${error.message}`);
     }
-    return false;
 }
 
 async function verifySignature(statusDiv, dsseEnvelope, verificationKey) {
@@ -411,8 +415,7 @@ window.processSigstore = async function() {
                 verificationWarning.textContent = 'The provided Sigstore bundle details were not added to rekor, therefore Rekor entries verification was skipped, it is recommended to farther verify the bundle certificate using sigstore cosign tool';
                 verificationWarning.style.display = 'block';
                 verificationWarning.className = 'verification-warning';    
-
-                
+               
             }
         }
     }
