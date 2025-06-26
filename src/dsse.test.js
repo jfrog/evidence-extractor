@@ -33,6 +33,57 @@ Pp752cOnpHESRpL86bpVM9uoVoruXsajOKMXfTxjDvD9KWkpy9wDWuQoMbC0A6a3
 nwIDAQAB
 -----END PUBLIC KEY-----`;
 
+    const validECDSAPublicKey = `-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAESE/nALJ3V0oRQMxMJyQABey7wnj6
+5wcnR63JD/YfoXyOELgRffw+ibdj5M3zVYb0k9Ri6ulWjxELzEzrIGecJQ==
+-----END PUBLIC KEY-----`;
+    const valid_ECDSA_DSSE_Envelope = {
+            payload: "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJzdWJqZWN0IjpbeyJuYW1lIjoiY29uc2lzdGdlbi0wLjAuNy5qYXIiLCJkaWdlc3QiOnsic2hhMjU2IjoiYzc4ODdjMTAyMzM3NzZlZmE5NGY4ZGQ3ZmRjOWE2N2FlYmUyYzVlNzA1MzA0MjZmNGZiODFhNjZlN2EwMTI2NSJ9fV0sInByZWRpY2F0ZVR5cGUiOiJodHRwczovL3Nsc2EuZGV2L3Byb3ZlbmFuY2UvdjEiLCJwcmVkaWNhdGUiOnsiYnVpbGREZWZpbml0aW9uIjp7ImJ1aWxkVHlwZSI6Imh0dHBzOi8vYWN0aW9ucy5naXRodWIuaW8vYnVpbGR0eXBlcy93b3JrZmxvdy92MSIsImV4dGVybmFsUGFyYW1ldGVycyI6eyJ3b3JrZmxvdyI6eyJyZWYiOiJyZWZzL3RhZ3MvdjAuMC43IiwicmVwb3NpdG9yeSI6Imh0dHBzOi8vZ2l0aHViLmNvbS9Vbml0VmVjdG9yWS1MYWJzL2NvbnNpc3RnZW4iLCJwYXRoIjoiLmdpdGh1Yi93b3JrZmxvd3MvcmVsZWFzZS55bWwifX0sImludGVybmFsUGFyYW1ldGVycyI6eyJnaXRodWIiOnsiZXZlbnRfbmFtZSI6InJlbGVhc2UiLCJyZXBvc2l0b3J5X2lkIjoiODYyNjI0NjY1IiwicmVwb3NpdG9yeV9vd25lcl9pZCI6IjY2NzU0ODU2IiwicnVubmVyX2Vudmlyb25tZW50IjoiZ2l0aHViLWhvc3RlZCJ9fSwicmVzb2x2ZWREZXBlbmRlbmNpZXMiOlt7InVyaSI6ImdpdCtodHRwczovL2dpdGh1Yi5jb20vVW5pdFZlY3RvclktTGFicy9jb25zaXN0Z2VuQHJlZnMvdGFncy92MC4wLjciLCJkaWdlc3QiOnsiZ2l0Q29tbWl0IjoiNmY1OWM5NTAxZjAzZDg3NjU4NmE2YTM0ZjQ5NjA0ODg0OGE1ZDJlMCJ9fV19LCJydW5EZXRhaWxzIjp7ImJ1aWxkZXIiOnsiaWQiOiJodHRwczovL2dpdGh1Yi5jb20vVW5pdFZlY3RvclktTGFicy9jb25zaXN0Z2VuLy5naXRodWIvd29ya2Zsb3dzL3JlbGVhc2UueW1sQHJlZnMvdGFncy92MC4wLjcifSwibWV0YWRhdGEiOnsiaW52b2NhdGlvbklkIjoiaHR0cHM6Ly9naXRodWIuY29tL1VuaXRWZWN0b3JZLUxhYnMvY29uc2lzdGdlbi9hY3Rpb25zL3J1bnMvMTEwOTY5MTI4NzAvYXR0ZW1wdHMvMSJ9fX19",
+            payloadType: "application/vnd.in-toto+json",
+            signatures:[
+                {sig: "MEYCIQCKWK/a/k+X1UQcyVDkCe+mGj9IS6h/EoTp6QW8WXbbaAIhAOCKjpTFaL1FtZvxCxcWUoFkHCoayNzfZRUY0Ga9Fc4O"}]        
+    }
+    const valid_CERTIFICATE_DSSE_Envelope = {
+        payload: "eyJfdHlwZSI6Imh0dHBzOi8vaW4tdG90by5pby9TdGF0ZW1lbnQvdjEiLCJzdWJqZWN0IjpbeyJkaWdlc3QiOnsic2hhMjU2IjoiNzJjM2QxZWIzMmYyZTYzN2IyN2JhZDk0ZTkyNGU3NmMzZTM3ODgyMjQ2MGNjYmNjY2EwNzFhOWMzMzRkNjA5ZCJ9fV0sInByZWRpY2F0ZVR5cGUiOiJodHRwczovL2pmcm9nLmNvbS9ldmlkZW5jZS9jeWNsb25lZHgvdmV4L3YxLjQiLCJwcmVkaWNhdGUiOnsiJHNjaGVtYSI6Imh0dHA6Ly9jeWNsb25lZHgub3JnL3NjaGVtYS9ib20tMS42LnNjaGVtYS5qc29uIiwiYm9tRm9ybWF0IjoiQ3ljbG9uZURYIiwibWV0YWRhdGEiOnsiY29tcG9uZW50Ijp7Im5hbWUiOiJbcmVsZWFzZS1idW5kbGVzLXYyXS9leGFtcGxlLWJ1bmRsZSIsInB1cmwiOiJwa2c6cmVsZWFzZUJ1bmRsZVYyLyU1QnJlbGVhc2UtYnVuZGxlcy12MiU1RCUyRmV4YW1wbGUtYnVuZGxlQDU3IiwidHlwZSI6ImxpYnJhcnkiLCJ2ZXJzaW9uIjoiNTcifSwidGltZXN0YW1wIjoiMjAyNS0wNC0yMVQwODo0NjozMFoiLCJ0b29scyI6W3sibmFtZSI6IlhyYXkiLCJ2ZW5kb3IiOiJKRnJvZyBJbmMuIiwidmVyc2lvbiI6IjMuMTE4LjQifV19LCJzZXJpYWxOdW1iZXIiOiJ1cm46dXVpZDplYzFkN2ZhNC1kYmQ2LTQ2ZDAtNjgyMS0zOTQ2YjQ3MjFlYzMiLCJzcGVjVmVyc2lvbiI6IjEuNiIsInZlcnNpb24iOjEsInZ1bG5lcmFiaWxpdGllcyI6W3siYWZmZWN0cyI6W3sicmVmIjoicGtnOmdvL2dpdGh1Yi5jb20lMkZnb2xhbmclMkZnb0AxLjIzLjMifV0sImFuYWx5c2lzIjp7ImRldGFpbCI6IlRoZSB2dWxuZXJhYmxlIGZ1bmN0aW9uIENlcnRQb29sLkFwcGVuZENlcnRzRnJvbVBFTSBpcyBjYWxsZWQsIFRoZSB2dWxuZXJhYmxlIGZ1bmN0aW9uIENlcnRpZmljYXRlLkNoZWNrU2lnbmF0dXJlRnJvbSBpcyBjYWxsZWQsIFRoZSB2dWxuZXJhYmxlIGZ1bmN0aW9uIENlcnRpZmljYXRlLlZlcmlmeSBpcyBjYWxsZWQsIFRoZSB2dWxuZXJhYmxlIGZ1bmN0aW9uIENlcnRpZmljYXRlLlZlcmlmeUhvc3RuYW1lIGlzIGNhbGxlZCwgVGhlIHZ1bG5lcmFibGUgZnVuY3Rpb24gSG9zdG5hbWVFcnJvci5FcnJvciBpcyBjYWxsZWQsIFRoZSB2dWxuZXJhYmxlIGZ1bmN0aW9uIFBhcnNlQ2VydGlmaWNhdGUgaXMgY2FsbGVkIiwic3RhdGUiOiJleHBsb2l0YWJsZSJ9LCJkZXNjcmlwdGlvbiI6IkEgY2VydGlmaWNhdGUgd2l0aCBhIFVSSSB3aGljaCBoYXMgYSBJUHY2IGFkZHJlc3Mgd2l0aCBhIHpvbmUgSUQgbWF5IGluY29ycmVjdGx5IHNhdGlzZnkgYSBVUkkgbmFtZSBjb25zdHJhaW50IHRoYXQgYXBwbGllcyB0byB0aGUgY2VydGlmaWNhdGUgY2hhaW4uIENlcnRpZmljYXRlcyBjb250YWluaW5nIFVSSXMgYXJlIG5vdCBwZXJtaXR0ZWQgaW4gdGhlIHdlYiBQS0ksIHNvIHRoaXMgb25seSBhZmZlY3RzIHVzZXJzIG9mIHByaXZhdGUgUEtJcyB3aGljaCBtYWtlIHVzZSBvZiBVUklzLiIsImlkIjoiQ1ZFLTIwMjQtNDUzNDEifSx7ImFmZmVjdHMiOlt7InJlZiI6InBrZzpnby9naXRodWIuY29tJTJGZ29sYW5nJTJGZ29AMS4yMy4zIn1dLCJhbmFseXNpcyI6eyJkZXRhaWwiOiJUaGUgdnVsbmVyYWJsZSBmdW5jdGlvbiBDbGllbnQuRG8gaXMgbmV2ZXIgY2FsbGVkLCBUaGUgdnVsbmVyYWJsZSBmdW5jdGlvbiBDbGllbnQuR2V0IGlzIG5ldmVyIGNhbGxlZCwgVGhlIHZ1bG5lcmFibGUgZnVuY3Rpb24gQ2xpZW50LkhlYWQgaXMgbmV2ZXIgY2FsbGVkLCBUaGUgdnVsbmVyYWJsZSBmdW5jdGlvbiBDbGllbnQuUG9zdCBpcyBuZXZlciBjYWxsZWQsIFRoZSB2dWxuZXJhYmxlIGZ1bmN0aW9uIENsaWVudC5Qb3N0Rm9ybSBpcyBuZXZlciBjYWxsZWQsIFRoZSB2dWxuZXJhYmxlIGZ1bmN0aW9uIEdldCBpcyBuZXZlciBjYWxsZWQsIFRoZSB2dWxuZXJhYmxlIGZ1bmN0aW9uIEhlYWQgaXMgbmV2ZXIgY2FsbGVkLCBUaGUgdnVsbmVyYWJsZSBmdW5jdGlvbiBQb3N0IGlzIG5ldmVyIGNhbGxlZCwgVGhlIHZ1bG5lcmFibGUgZnVuY3Rpb24gUG9zdEZvcm0gaXMgbmV2ZXIgY2FsbGVkIiwianVzdGlmaWNhdGlvbiI6ImNvZGVfbm90X3JlYWNoYWJsZSIsInN0YXRlIjoibm90X2FmZmVjdGVkIn0sImRlc2NyaXB0aW9uIjoiVGhlIEhUVFAgY2xpZW50IGRyb3BzIHNlbnNpdGl2ZSBoZWFkZXJzIGFmdGVyIGZvbGxvd2luZyBhIGNyb3NzLWRvbWFpbiByZWRpcmVjdC4gRm9yIGV4YW1wbGUsIGEgcmVxdWVzdCB0byBhLmNvbS8gY29udGFpbmluZyBhbiBBdXRob3JpemF0aW9uIGhlYWRlciB3aGljaCBpcyByZWRpcmVjdGVkIHRvIGIuY29tLyB3aWxsIG5vdCBzZW5kIHRoYXQgaGVhZGVyIHRvIGIuY29tLiBJbiB0aGUgZXZlbnQgdGhhdCB0aGUgY2xpZW50IHJlY2VpdmVkIGEgc3Vic2VxdWVudCBzYW1lLWRvbWFpbiByZWRpcmVjdCwgaG93ZXZlciwgdGhlIHNlbnNpdGl2ZSBoZWFkZXJzIHdvdWxkIGJlIHJlc3RvcmVkLiBGb3IgZXhhbXBsZSwgYSBjaGFpbiBvZiByZWRpcmVjdHMgZnJvbSBhLmNvbS8sIHRvIGIuY29tLzEsIGFuZCBmaW5hbGx5IHRvIGIuY29tLzIgd291bGQgaW5jb3JyZWN0bHkgc2VuZCB0aGUgQXV0aG9yaXphdGlvbiBoZWFkZXIgdG8gYi5jb20vMi4iLCJpZCI6IkNWRS0yMDI0LTQ1MzM2In0seyJhZmZlY3RzIjpbeyJyZWYiOiJwa2c6Z28vZ2l0aHViLmNvbSUyRmdvbGFuZyUyRmdvQDEuMjMuMyJ9XSwiYW5hbHlzaXMiOnsiZGV0YWlsIjoiVGhlcmUgYXJlIG5vIGFwcGxpY2FiaWxpdHkgc2Nhbm5lcnMgZm9yIHRoaXMgc3BlY2lmaWMgQ1ZFIiwic3RhdGUiOiJpbl90cmlhZ2UifSwiZGVzY3JpcHRpb24iOiJEdWUgdG8gdGhlIHVzYWdlIG9mIGEgdmFyaWFibGUgdGltZSBpbnN0cnVjdGlvbiBpbiB0aGUgYXNzZW1ibHkgaW1wbGVtZW50YXRpb24gb2YgYW4gaW50ZXJuYWwgZnVuY3Rpb24sIGEgc21hbGwgbnVtYmVyIG9mIGJpdHMgb2Ygc2VjcmV0IHNjYWxhcnMgYXJlIGxlYWtlZCBvbiB0aGUgcHBjNjRsZSBhcmNoaXRlY3R1cmUuIER1ZSB0byB0aGUgd2F5IHRoaXMgZnVuY3Rpb24gaXMgdXNlZCwgd2UgZG8gbm90IGJlbGlldmUgdGhpcyBsZWFrYWdlIGlzIGVub3VnaCB0byBhbGxvdyByZWNvdmVyeSBvZiB0aGUgcHJpdmF0ZSBrZXkgd2hlbiBQLTI1NiBpcyB1c2VkIGluIGFueSB3ZWxsIGtub3duIHByb3RvY29scy4iLCJpZCI6IkNWRS0yMDI1LTIyODY2In1dfSwiY3JlYXRlZEF0IjoiMjAyNS0wNC0yMVQwODo0NjozMC43NzRaIiwiY3JlYXRlZEJ5IjoiamZ4ckAwMWoxd3c5NGdqZGNjeTd4OGY4ZzJ2ZHAyNSJ9",
+        payloadType: "application/vnd.in-toto+json",
+        signatures: [{
+                keyid: "PGP-RSA-2048",
+                sig: "LS0tLS1CRUdJTiBQR1AgU0lHTkFUVVJFLS0tLS0KVmVyc2lvbjogQkNQRyB2MS44MAoKaVFFY0JBQUJDQUFHQllKb0JnWG5BQW9KRU9GMnYyTGtIRlZMSE9ZSC8wckRpUU9sN0Evb3JrUlB4bUJBOGNnegovQzNCOHlzNnJTR1hnUlJjOTVESXEvMlBXR2tuYnlhNXA3cG0wL2VUanlvRVZSNDh5UnF3OXhZRjA4Sll4TFFyCkVQRCtpRlhRMzNMYm80NXE5ZUJ1WmQvUVdnMFhZNHh1NEdYYmVTL1lSa2ZhTlVWMzhZUXZPMXYxcnpkcTd3dHUKZmdaVzBqcnJqK0F3NUtFV2pRR2ozTGY5NjFxNVlCYUhvQjdQVU1IWmtyNGs3OXdHdkpBazN2T21YNTZQUS81bQplTCtuMS9OT1kvRTlYMVRnNW41b1VjRE8xdkp6OVV2Q1VZMUFWdEVGQnB3NDlIa0pZS0VCa2tKLzA5OWt6cU1mCnBoU1ZaZXdVVkZ6ZDlYcUpJVUIwL3BETTV5OTNYK0F4d0lLYmplL0hBaVl0YTUzaDF1aTFRcXNOSmZOTmdGcz0KPVFxYWcKLS0tLS1FTkQgUEdQIFNJR05BVFVSRS0tLS0tCg=="
+            }]
+    }
+
+    const valid_CERTIFICATE = `-----BEGIN PGP PUBLIC KEY BLOCK-----
+
+mQENBGSG4akBCADGNqHvbIwcEKybDeaBBnhzJceLN8bjaRKisouH7HD1qwIEnOsJ
+hfVpopyd1TwvwEKwkiPHX1wpXMveS2EQ0sqxKiYmkcqaXalEio8/5TvCzBmg71kD
++5V5eIYXdbZ9nRhwno831xhNiisn1/VWfMWgATags71d1gEA/k68+4zOCmrwk/dl
+0jZQlFf8BgJ5GaKQEvCEzF3KZyaCOlS/lBXUmSOxeWP2eYG2u9rcvpCLjUEiPjq7
+TxLkX0iFHKWW8mE2K4gNZ9HylqCqlnyU+DND5GgsIjWNdTn6vpE/3Qomtj461isR
+tP0aC7FzWVLcf48j8QGPSVy1ztdae0rMOdEbABEBAAG0J3Rlc3RpbmcgKHRlc3Rp
+bmcpIDx0ZXN0aW5nQGV4YW1wbGUuY29tPokBUQQTAQgAOxYhBLVg5aJsYzMayumz
+gOF2v2LkHFVLBQJkhuGpAhsDBQsJCAcCAiICBhUKCQgLAgQWAgMBAh4HAheAAAoJ
+EOF2v2LkHFVLlXcIAK1Kj2wzOpeCJrmy0t/h+C1cU97vOrr+zDJpg3jrc49ys7VM
+ZUSZL0EyYBCOFZJNOoFhAd05D7og+sQ/ebvyVab6ATv5/qQIGBhTRUUyEY+5bMXq
+BbB3M7bEyRE3ME4sifqM36AX67tFjI2ghmuMzudJYJ+D/UpHnvh8TnGk5gZK/82d
+CUgbuj2WSJTDucR1ZeYzNwHjuSRI3pCagXgQ7ha3a9BDt/OwxOGx+BqlEDdE26ZG
+s7oX0/iUSZIHfuIPVb/h8ZjTVA3eezIzSbiReLK17qhQ/YhPUT0BAhKmwyUshXOW
+A2fbR/cD9POoHvHfOSvW42SSHxqDGA75sKqJqTG5AQ0EZIbhqQEIAL16R/pqr9Mg
+p1Do7Ji4JgShKVI1noI9nYueG4iEf1ukOBV21vqnZnw4UR2wKlaefGJ+bVdBaerY
+xbMyQZJVS6bMN4uMKQB+QP3pLZpVcIrURTP+hCRhyJewVBFQcgYagQu8hA6w2JUi
+1UJDXgCKaoFt/+mPqbPKfmQCm/+FtQ+ICI0eNEK3YWKO9FywqGaAKKxcs4bPlFc2
+ESjJ7oWWPxCv9G9+yv2P5pxv6I0uiJz+i1IHCrU5ebGDGQzZQcpcMewgoXnp64FP
+YGF1aU+UEoAYS+U+/8StcHBoyCVZRLuYb0aOY1GacAwrXN4dWA043LXnZUUViiHF
+lU6rqwOu5h8AEQEAAYkBNgQYAQgAIBYhBLVg5aJsYzMayumzgOF2v2LkHFVLBQJk
+huGpAhsMAAoJEOF2v2LkHFVL/qAH/iQdcYqxcg8ZfMNC1f0U+WfVPc/PxE5pRC+O
+PXulVtYyNgHMvEY8JZmhTDpkgHfnT6TYVyXu5AcyQJFUWZmbfJmddLBb3YxhgnxG
+iQ4Ia8RI+Kj88VY3y7v799uCAmY52jDbQrETgl7o1XmgYSAsQp6K8nv8D/XyMlNh
+zI6Ed4Torc9+vQmZG6njRLPZySFrrQVOXCDw3r9zceJeP3iLUoKn1awHsqiEkdN1
+X2mNxPWgSPLCYG7nC/XkCXSJ2lBkpKFYxNy1riXyoDZTKMA+ao40j+UpWZqEGLNs
+iLs3GyeuN7oANDIumXW1uE0/4yFCS4i8BWCW0JT67/d5DE4G974=
+=l2C9
+-----END PGP PUBLIC KEY BLOCK-----`
+    
+    
     describe('extractPublicKeyFromPEM', () => {
         it('should successfully extract a public key from PEM format', async () => {
             const validPublicKeyTrimmed = validPublicKey.trim();
@@ -52,12 +103,26 @@ nwIDAQAB
         });
     });
 
-    describe('verifyDSSESignature', () => {
-        it('should successfully verify a valid DSSE signature', async () => {
-            const publicKeyInfo = await extractPublicKeyFromPEM(validPublicKey);
-            const result = await verifyDSSESignature(validDSSEEnvelope, publicKeyInfo);
-            expect(result).to.be.true;
+    describe('verify_signature', () => {
+        const statusDiv = document.getElementById('verificationStatus');
+
+        it('should successfully verify a valid DSSE RSA punlic key', async () => {
+            const result = await verifySignature(statusDiv, validDSSEEnvelope, validPublicKey);
+            expect(result).to.be.true;            
+            expect(statusDiv.className).to.not.include('invalid');
         });
+        it('should successfully verify a valid DSSE with ECDSA public key', async () => {
+            const result = await verifySignature(statusDiv, valid_ECDSA_DSSE_Envelope, validECDSAPublicKey);
+            expect(result).to.be.true;            
+            expect(statusDiv.className).to.not.include('invalid');
+        });
+
+        it('should successfully verify a valid DSSE with certificate', async () => {
+            const result = await verifySignature(statusDiv, valid_CERTIFICATE_DSSE_Envelope, valid_CERTIFICATE);
+            expect(result).to.be.true;            
+            expect(statusDiv.className).to.not.include('invalid');
+        });
+      
 
         it('should fail to verify an invalid DSSE signature', async () => {
             const invalidEnvelope = {

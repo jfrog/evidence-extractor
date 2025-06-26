@@ -47,4 +47,10 @@ Object.entries(mockElements).forEach(([id, element]) => {
     mockElement.id = id;
     Object.assign(mockElement, element);
     document.body.appendChild(mockElement);
-}); 
+});
+
+// Add .right-panel element
+const rightPanel = document.createElement('div');
+rightPanel.className = 'right-panel';
+rightPanel.scrollIntoView = () => {};
+document.body.appendChild(rightPanel); 
