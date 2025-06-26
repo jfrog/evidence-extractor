@@ -117,7 +117,7 @@ async function verifyDSSESignature(dsseEnvelope, publicKeyInfo) {
     }
 }
 
-async function verifySignature(statusDiv, dsseEnvelope, verificationKey) {
+async function verifySignature(statusDiv, dsseEnvelope, keyText) {
     try {
         // Create a verification status element        
         statusDiv.style.display = 'block';
@@ -127,22 +127,6 @@ async function verifySignature(statusDiv, dsseEnvelope, verificationKey) {
         // Make sure the right panel is visible
         const rightPanel = document.querySelector('.right-panel');
         rightPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        
-        // Check if we have a certificate file or a pasted public key
-        let keyText;
-        
-        if (verificationKey instanceof File) {
-            // If it's a file, read it
-            const reader = new FileReader();
-            keyText = await new Promise((resolve, reject) => {
-                reader.onload = e => resolve(e.target.result);
-                reader.onerror = e => reject(new Error('Failed to read certificate file'));
-                reader.readAsText(verificationKey);
-            });
-        } else {
-            // If it's a string (pasted key), use it directly
-            keyText = verificationKey;
-        }
         
         // Basic key format validation
         if (!keyText.includes('-----BEGIN') || !keyText.includes('-----END')) {
