@@ -416,6 +416,9 @@
         // Function to clear JSON input
         window.clearJsonInput = function() {
             document.getElementById('dsseInput').value = '';
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileName').textContent = '';
+            document.getElementById('fileName').style.display = 'none';
             // reset display            
             window.resetDisplay();
         };
@@ -423,6 +426,9 @@
         // Function to clear public key input
         window.clearPubKeyInput = function() {
             document.getElementById('pubKeyInput').value = '';
+            document.getElementById('certInput').value = '';
+            document.getElementById('certFileName').textContent = '';
+            document.getElementById('certFileName').style.display = 'none';
              // reset display            
              window.resetVerificationMessages();
         };
@@ -437,6 +443,9 @@
         // Function to clear Sigstore input
         window.clearSigstoreInput = function() {
             document.getElementById('sigstoreInput').value = '';
+            document.getElementById('sigstoreFileInput').value = '';
+            document.getElementById('sigstoreFileName').textContent = '';
+            document.getElementById('sigstoreFileName').style.display = 'none';
             // reset display            
             window.resetDisplay();
         };
