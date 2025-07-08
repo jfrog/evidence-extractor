@@ -1,4 +1,4 @@
-# Evidence verifier
+# Free DSSE Attestation Online Decoder Tool
 
 A simple web-based tool to extract content from DSSE (Dead Simple Signing Envelope) payloads and validate its signing using a public key.
 
