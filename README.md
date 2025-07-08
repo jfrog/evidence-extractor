@@ -11,12 +11,14 @@ A simple web-based tool to extract content from DSSE (Dead Simple Signing Envelo
 
 
 ## Usage
+you are welcomed to use the tool on https://dsse.io/
 
-1. Open `index.html` in your web browser
-2. Paste your DSSE envelope JSON into the text area
+### usage
+1. Paste your DSSE envelope JSON into the text area
 3. Potentially paste or upload your public key
 3. Click "Extract & Verify" to process the envelope
-4. The decoded content will be displayed on the right side of the tool along with its signature verification result 
+4. The decoded content will be displayed on the right side of the tool along with its signature verification result
+5. Alternatively if you have a sigstore bundle, you are welcomed to upload it into the Sigstore Bundle Input tab, and we will extract the DSSE payload from it and also attempt to verify its transparency log entry against sigstore transparency log, if that is available
 
 ## DSSE Envelope Format
 
@@ -80,5 +82,5 @@ starkbank-ecdsa https://www.npmjs.com/package/starkbank-ecdsa (license under htt
 
 ## Note
 
-This tool only verifies RSA and PGP signatures. 
+This tool only verifies RSA, PGP, and ECDSA signatures. 
 
