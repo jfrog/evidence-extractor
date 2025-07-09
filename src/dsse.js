@@ -393,7 +393,7 @@ window.processSigstore = async function() {
                 console.info('tlogEntries not found, skipping tlog entry verification');
                 // set result
                 verificationStatus.className = 'verification-status valid';
-                verificationStatus.textContent = 'Signature verification successful! The DSSE envelope was not tampered with, see validation warning for further details';
+                verificationStatus.textContent = 'Signature verification skipped';
                 verificationStatus.style.display = 'block';
                 // set warning
                 verificationWarning.textContent = 'The provided Sigstore bundle details were not added to rekor, therefore Rekor entries verification was skipped, it is recommended to farther verify the bundle certificate using sigstore cosign tool';
