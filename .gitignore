@@ -12,3 +12,4 @@
 /certificate.pem
 /ecdsa_test.js
 /timestamp
+.DS_Store

@@ -1,4 +1,4 @@
-# Free DSSE Attestation Online Decoder Tool
+# A Free DSSE Attestation Online Decoder Tool
 
 A simple web-based tool to extract content from DSSE (Dead Simple Signing Envelope) payloads and validate its signing using a public key.
 
@@ -11,9 +11,11 @@ A simple web-based tool to extract content from DSSE (Dead Simple Signing Envelo
 
 
 ## Usage
-you are welcomed to use the tool on https://dsse.io/
 
-### usage
+You are welcomed to use the tool on https://dsse.io/
+
+### Usage
+
 1. Paste your DSSE envelope JSON into the text area
 3. Potentially paste or upload your public key
 3. Click "Extract & Verify" to process the envelope
@@ -58,7 +60,9 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA07f3tJM904857fh439f7
 nwIDAQAB
 -----END PUBLIC KEY-----
 ```
+
 ## PGP Example
+
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
 
@@ -71,7 +75,9 @@ X2mNxPWgSPLCYG7nC/XkCXSJ2lBkpKFYxNy1riXyoDZTKMA+8765j+UpWZqEGLNs
 =l2C3
 -----END PGP PUBLIC KEY BLOCK-----
 ```
+
 ## Dependencies
+
 OpenPGP.js  https://www.npmjs.com/package/openpgp (licensed under https://www.gnu.org/licenses/lgpl-3.0.en.html)
 
 Node-Forge (forge.js) https://www.npmjs.com/package/node-forge (license under BSD License/GNU General Public License (GPL) Version 2 )
