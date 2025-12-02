@@ -24,8 +24,11 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
 
+    - name: Authenticate to npm
+      run: echo "//registry.npmjs.org/:_authToken=${{ secrets.NPM_TOKEN }}" > ~/.npmrc
+
     - name: Install dependencies
-      run: npm ci
+      run: npm install
 
     - name: Run tests
       run: npm test
