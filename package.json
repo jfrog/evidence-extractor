@@ -13,7 +13,7 @@
   },
   "dependencies": {
     "@peculiar/x509": "^1.12.4",
-    "elliptic": "^6.5.4",
+    "elliptic": "^6.6.1",
     "lru-cache": "^11.2.4",
     "node-forge": "^1.3.2",
     "openpgp": "^6.1.1",
@@ -24,9 +24,9 @@
     "buffer": "^6.0.3",
     "chai": "^4.5.0",
     "jsdom": "^24.0.0",
-    "mocha": "^10.8.2",
-    "node-polyfill-webpack-plugin": "^4.1.0",
-    "webpack": "^5.105.0",
+    "mocha": "^7.2.0",
+    "node-polyfill-webpack-plugin": "^4.0.0",
+    "webpack": "^5.105.3",
     "webpack-cli": "^6.0.1"
   },
   "overrides": {

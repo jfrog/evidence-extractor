@@ -94,7 +94,7 @@ OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 ***************************************************************************** */
 
-/*! OpenPGP.js v6.1.1 - 2025-05-19 - this is LGPL licensed code, see LICENSE/our website https://openpgpjs.org/ for more information. */
+/*! OpenPGP.js v6.3.0 - 2025-12-09 - this is LGPL licensed code, see LICENSE/our website https://openpgpjs.org/ for more information. */
 
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 
