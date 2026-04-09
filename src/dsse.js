@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import forge from 'node-forge';
 import { resetDisplay, stripCertificateContent , resetVerificationMessages} from './utils.js';
 import {verifyStarkbankSignature} from './keys-helpers/ecdsa-helper.js';
