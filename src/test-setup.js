@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { JSDOM } from 'jsdom';
 
 // Set up JSDOM environment

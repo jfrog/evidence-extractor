@@ -25,12 +25,13 @@
     "buffer": "^6.0.3",
     "chai": "^6.2.2",
     "jsdom": "^29.0.2",
-    "mocha": "^11.7.5",
-    "node-polyfill-webpack-plugin": "^4.1.0",
-    "webpack": "^5.106.0",
-    "webpack-cli": "^7.0.2"
+    "mocha": "^11.3.0",
+    "node-polyfill-webpack-plugin": "^4.0.0",
+    "webpack": "^5.107.2",
+    "webpack-cli": "^7.0.3"
   },
   "overrides": {
-    "glob": "^10.0.0"
+    "glob": "^10.0.0",
+    "serialize-javascript": "^7.0.6"
   }
 }
